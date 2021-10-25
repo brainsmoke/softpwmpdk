@@ -1,7 +1,7 @@
 
 # 3-channel software PWM LED driver
 
-* 919Hz, 8-bit PWM
+* 912Hz, 8-bit PWM
 * 3-channels, evenly spaced phase offsets
 * inverse polarity compared to WS2811 (pin high = LED on)
 * UART based signalling (19200 baud,)
