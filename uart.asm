@@ -1,8 +1,8 @@
-;
+
+.globl INDEX
 
 PIN_UART   = 0
 MASK_UART  = 1<<(PIN_UART)
-LOCALINDEX = 3
 BUFSIZE = 4 ; needs to be a power of two
 START_DELAY = 6
 DATA_DELAY = 4
@@ -16,6 +16,7 @@ DATA_DELAY = 4
 	clear data
 	clear stream_index
 	clear buf_index
+	clear buf_index_high
 
 .endm
 
@@ -51,7 +52,7 @@ DATA_DELAY = 4
 ; prereq: wait_count = 0 ; bit_count = 0
 ;
 
-.macro uart_idle out_idle, out_countdown, ?l1, ?l2
+.macro uart_idle out_idle, out_countdown, out_reset, ?l1, ?l2
 	nop                     ; XXXXXXXXX
 	t0sn pa, #PIN_UART      ; 0 + 1
 	goto l1                 ; 1 + 1 | 2 --.
@@ -63,7 +64,19 @@ DATA_DELAY = 4
 l1:	dzsn reset_count        ; 3 + 1     <-'
 	goto l2                 ; 4 + 2
 	clear stream_index      ; 5 + 1
+	goto out_reset          ; 6 + 2 = 8
 l2:	goto out_idle           ; 6 + 2 = 8
+.endm
+
+.macro uart_reset out_idle
+	nop                     ; XXXXXXXXXX
+	mov a, buf1             ; 0 + 1
+	mov val1, a             ; 1 + 1
+	mov a, buf2             ; 2 + 1
+	mov val2, a             ; 3 + 1
+	mov a, buf3             ; 4 + 1
+	mov val3, a             ; 5 + 1
+	goto out_idle           ; 6 + 2
 .endm
 
 .macro uart_countdown out_countdown, out_sample, out_stop_bit, ?l1, ?l2, ?l3, ?l4
@@ -99,7 +112,7 @@ l1:	goto out_countdown      ; 6 + 2 = 8
 	t1sn pa, #PIN_UART         ; 0 + 1
 	goto l0                    ; 1 + 1 | 2 --. [ stop bit needs to be high ]
 	mov a, stream_index        ; 2 + 1       |
-	sub a, #LOCALINDEX         ; 3 + 1       |
+	sub a, #INDEX              ; 3 + 1       |
 	mov buf_index, a           ; 4 + 1       |
 	inc stream_index           ; 5 + 1       |
 	goto out_store             ; 6 + 2 = 8   |

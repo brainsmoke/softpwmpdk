@@ -25,6 +25,9 @@ PINMASK12 = ( (1<<CHANNEL1) | (1<<CHANNEL2) )
 	mov val1, a
 	mov val2, a
 	mov val3, a
+	mov buf1, a
+	mov buf2, a
+	mov buf3, a
 	mov cycle1, a
 	clear cycle2
 	clear cycle3

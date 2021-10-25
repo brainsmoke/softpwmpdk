@@ -27,6 +27,7 @@
 
 BIT_UART = (1<<0)
 LED_BRIGHTNESS_OFFSET = 0x0
+DATA_OFFSET=17
 
 STOP_BITS=5
 
@@ -74,7 +75,7 @@ def cb(program, ctx):
     t += 1
     if pdk.opcode_str(program[pdk.get_pc(ctx)]) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
         uart_next(ctx)
-        print (t-tlast, hex(pdk.read_mem(ctx, 13)))
+        print (t-tlast, hex(pdk.read_mem(ctx, DATA_OFFSET)))
         tlast = t
         
 ctx = pdk.new_ctx()

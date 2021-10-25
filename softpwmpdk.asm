@@ -1,5 +1,5 @@
 
-.module charlie
+.module softpwmpdk
 
 .include "pdk.asm"
 .include "uart.asm"
@@ -9,11 +9,14 @@
 .org 0x00
 
 bufstart:
+buf1:           .ds 1
+buf2:           .ds 1
+buf3:           .ds 1
+buf_:           .ds (BUFSIZE - 3)
+bufend:
 val1:           .ds 1
 val2:           .ds 1
 val3:           .ds 1
-val_:           .ds (BUFSIZE - 3)
-bufend:
 off1:           .ds 1
 off2:           .ds 1
 off3:           .ds 1
@@ -26,8 +29,9 @@ wait_count:     .ds 1
 bit_count:      .ds 1
 reset_count:    .ds 1
 data:           .ds 1
-stream_index:   .ds 1
 buf_index:      .ds 1
+buf_index_high: .ds 1 ; needs to be zero
+stream_index:   .ds 1
 
 .area CODE (ABS)
 .org 0x00
@@ -65,7 +69,11 @@ FREQ=3969024
 
 	u_idle:
 	softpwm
-	uart_idle u_idle, u_countdown
+	uart_idle u_idle, u_countdown, u_reset
+
+	u_reset:
+	softpwm
+	uart_reset u_idle
 
 	u_countdown:
 	softpwm
