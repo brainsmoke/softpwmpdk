@@ -24,11 +24,11 @@ cycle1:         .ds 1
 cycle2:         .ds 1
 cycle3:         .ds 1
 out:            .ds 1
+data:           .ds 1
+reset_count:    .ds 1
 
 wait_count:     .ds 1
 bit_count:      .ds 1
-reset_count:    .ds 1
-data:           .ds 1
 buf_index:      .ds 1
 buf_index_high: .ds 1 ; needs to be zero
 stream_index:   .ds 1
