@@ -241,10 +241,10 @@ def op_unary_a(ctx, un):
         skip_next(ctx)
 
 def op_pcadd_a(ctx):
-    new_pc = get_pc(ctx)+read_a(ctx)
+    new_pc = get_pc(ctx)+read_a(ctx) + 1 #?
     if new_pc > 0x3ff:
         raise AssertionError("ub")
-    jump_to(new_pc)
+    jump_to(ctx, new_pc)
 
 def op_wdreset(ctx):
     pass
@@ -680,7 +680,7 @@ def opcode_str(opcode):
     op, args, num = opcode
     return op_fmt[op].format( **{ k : field_str[k](v) for k,v in args.items() } )
 
-def get_opcode(program, ctx):
+def get_opcode(ctx, program):
     if stalled(ctx):
         return '[stall]'
     else:

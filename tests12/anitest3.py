@@ -119,7 +119,7 @@ while True:
         else:
             assert leds == s[-1]
 
-    if pdk.get_opcode(program, ctx) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
+    if pdk.get_opcode(ctx, program) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
         uart_next(ctx)
     pdk.step(program, ctx)
 

@@ -27,9 +27,6 @@
 
 BIT_UART = (1<<0)
 LED_BRIGHTNESS_OFFSET = 0x0
-DATA_OFFSET=17
-
-STOP_BITS=5
 
 import sys
 
@@ -39,23 +36,16 @@ program = []
 t, tlast = 0, 0
 ix = 0
 
-def get_fb_led(ctx, i):
-    assert 0 <= i < 8
-    return pdk.read_mem(ctx, LED_BRIGHTNESS_OFFSET+i)
-
 def uart_next(ctx):
     global ix
-    byte = (ix // (9+STOP_BITS))%256
-    if byte > 24:
-        pdk.set_pin(ctx, BIT_UART)
-        return
-    bit = ix % (9+STOP_BITS)
+    byte = (ix // 10)%256
+    bit = ix % 10
     if bit == 0:
         pdk.set_pin(ctx, 0)
-        print ('s', end=' ')
-    elif bit > 8:
+        print ('s ', end='')
+    elif bit == 9:
         pdk.set_pin(ctx, BIT_UART)
-        print ('e', end=' ')
+        print ('e ', end='')
     else:
         pdk.set_pin(ctx, BIT_UART*bool( byte & (1<<(bit-1)) ) )
         print (BIT_UART*bool( byte & (1<<(bit-1)) ), end=' ')
@@ -65,19 +55,18 @@ def uart_next(ctx):
 with open(sys.argv[1]) as f:
     program = pdk.parse_program(f.read(), arch='pdk14')
 
-last_fb = None
-def cb(program, ctx):
-    global t, tlast, last_fb
-    fb = tuple( get_fb_led(ctx, i) for i in range(4) )
-    if fb != last_fb:
-        print( ' '.join(hex(x) for x in fb) )
-        last_fb = fb
-    t += 1
-    if pdk.opcode_str(program[pdk.get_pc(ctx)]) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
-        uart_next(ctx)
-        print (t-tlast, hex(pdk.read_mem(ctx, DATA_OFFSET)))
-        tlast = t
-        
 ctx = pdk.new_ctx()
 
-pdk.run( program, ctx, callback=cb)
+last_fb = None
+while True:
+    fb = tuple( pdk.read_mem(ctx, i) for i in range(13) )
+    if fb != last_fb:
+#        print( ' '.join(hex(x) for x in fb) )
+        last_fb = fb
+    t += 1
+    if pdk.get_opcode(ctx, program) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
+        uart_next(ctx)
+        print (t-tlast, pdk.prog_state(program, ctx, max_mem=32))
+        tlast = t
+    pdk.step(program, ctx)
+

@@ -29,46 +29,30 @@ import sys
 
 import intelhex, pdk
 
-BIT_UART = (1<<0)
-CHANNELS = [ 4, 3, 6 ]
-
-STOP_BITS=5
 program = []
-ix = 0
-
-offset = 4
-uart_data = [255]*4 + [ int(s) for s in sys.argv[2:] ] + [ 0, 85, 255, 1,2,3,4,5 ]
-
-def uart_next(ctx):
-    global ix
-    byte = (ix // (9+STOP_BITS))
-    if byte >= len(uart_data):
-        pdk.set_pin(ctx, BIT_UART)
-        return
-    bit = ix % (9+STOP_BITS)
-    val = None
-    if bit == 0:
-        val = 0
-    elif bit > 8:
-        val = BIT_UART
-    else:
-        val = BIT_UART*bool( uart_data[byte] & (1<<(bit-1)) )
-
-    pdk.set_pin(ctx, val)
-
-    ix += 1
 
 with open(sys.argv[1]) as f:
     program = pdk.parse_program(f.read(), arch='pdk14')
 
-ctx = pdk.new_ctx()
+t = pdk.state_to_tuple(pdk.new_ctx())
+last_states = set([t])
+n_all = 0
+it = 0
+x_set = set()
 
-while True:
-    pa   = pdk.read_io_raw(ctx, 0x10)
-    pc = pdk.get_pc(ctx)
-    print ( ' '.join(" #"[bool( pa & (1<<CHANNELS[i]))] for i in range(3) ) + ''.join( " {:02x}".format(pdk.read_mem(ctx, i)) for i in range(17) ) + ' [A:{:02x}] [{:03x}] {}'.format(pdk.read_a(ctx), pc,pdk.get_opcode( program, ctx )))
-
-    if pdk.get_opcode(program, ctx) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
-        uart_next(ctx)
-    pdk.step(program, ctx)
+while tuple(last_states) not in x_set:
+    if it%100 == 0:
+        x_set.add(tuple(last_states))
+    it+=1
+    next_states = set()
+    for e in last_states:
+        for pin in range(256):
+            ctx = pdk.tuple_to_state(e)
+            pdk.set_pin(ctx, pin)
+            pdk.step(program, ctx)
+            next_states.add(pdk.state_to_tuple(ctx))
+            if not pdk.ioread(ctx):
+                break
+    print ( len(next_states) )
+    last_states = next_states
 

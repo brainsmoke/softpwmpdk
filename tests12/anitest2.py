@@ -25,30 +25,52 @@
 # (http://opensource.org/licenses/mit-license.html)
 #
 
-BIT_UART = (1<<0)
-LED_BRIGHTNESS_OFFSET = 0x0
-
 import sys
 
 import intelhex, pdk
 
+BIT_UART = (1<<0)
+CHANNELS = [ 4, 3, 6 ]
+
+STOP_BITS=5
+SAMPLES_PER_BYTE = (9+STOP_BITS)
 program = []
-t, tlast = 0, 0
 ix = 0
+cur = 0
+
+offset = 0
+uart_data = [
+	[85]*offset + [ 248,   0,   0,  85, 248, 255 ],
+	[85]*offset + [ 248, 255, 248,  85,   0,   0 ],
+	[85]*offset + [ 248,  85, 248,   0, 248, 255 ],
+	[85]*offset + [ 0,   255, 248, 255, 0,  0 ],
+	[85]*offset + [ 248, 0,248,  0, 255, 255, 255 ],
+	[85]*offset + [ 248, 255, 248, 85, 0, 255 ],
+]
+
 
 def uart_next(ctx):
-    global ix
-    byte = (ix // 10)%256
-    bit = ix % 10
-    if bit == 0:
-        pdk.set_pin(ctx, 0)
-        print ('s ', end='')
-    elif bit == 9:
-        pdk.set_pin(ctx, BIT_UART)
-        print ('e ', end='')
+    global ix, cur
+
+    if ix > len(uart_data[cur])*SAMPLES_PER_BYTE + 300:
+        cur = (cur+1)%len(uart_data)
+        ix = 0
+
+    byte = (ix // SAMPLES_PER_BYTE)
+    if byte >= len(uart_data[cur]):
+        val = BIT_UART
     else:
-        pdk.set_pin(ctx, BIT_UART*bool( byte & (1<<(bit-1)) ) )
-        print (BIT_UART*bool( byte & (1<<(bit-1)) ), end=' ')
+        bit = ix % SAMPLES_PER_BYTE
+        val = None
+        if bit == 0:
+            val = 0
+        elif bit > 8:
+            val = BIT_UART
+        else:
+            val = BIT_UART*bool( uart_data[cur][byte] & (1<<(bit-1)) )
+
+    print(ix, cur, val)
+    pdk.set_pin(ctx, val)
 
     ix += 1
 
@@ -57,16 +79,12 @@ with open(sys.argv[1]) as f:
 
 ctx = pdk.new_ctx()
 
-last_fb = None
 while True:
-    fb = tuple( pdk.read_mem(ctx, i) for i in range(13) )
-    if fb != last_fb:
-#        print( ' '.join(hex(x) for x in fb) )
-        last_fb = fb
-    t += 1
-    if pdk.opcode_str(program[pdk.get_pc(ctx)]) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
+    pa   = pdk.read_io_raw(ctx, 0x10)
+    pc = pdk.get_pc(ctx)
+    print ( ' '.join(" #"[bool( pa & (1<<CHANNELS[i]))] for i in range(3) ) + ''.join( " {:02x}".format(pdk.read_mem(ctx, i)) for i in range(32) ) + ' [A:{:02x}] [{:03x}] {}'.format(pdk.read_a(ctx), pc,pdk.get_opcode( ctx, program )))
+
+    if pdk.get_opcode(program, ctx) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
         uart_next(ctx)
-        print (t-tlast, hex(pdk.read_mem(ctx, 13)))
-        tlast = t
     pdk.step(program, ctx)
 

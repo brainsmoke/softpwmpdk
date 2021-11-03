@@ -3,7 +3,7 @@
 
 .include "pdk.asm"
 .include "uart.asm"
-.include "softpwm.asm"
+.include "softpwm8.asm"
 
 .area DATA (ABS)
 .org 0x00
