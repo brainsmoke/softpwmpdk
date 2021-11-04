@@ -4,7 +4,16 @@ CHANNEL2  = 3
 CHANNEL3  = 6
 PINMASK   = ( (1<<CHANNEL1) | (1<<CHANNEL2) | (1<<CHANNEL3) )
 
+REFRESH = 0 ; bit
+DATA_OK = 1 ; bit
+
 CASE_INSTR=6
+
+PRE_DATA=2
+READ_CHANNEL_1=3
+READ_CHANNEL_2=4
+READ_CHANNEL_3=5
+POST_DATA=6
 
 .globl INDEX
 
@@ -20,6 +29,7 @@ CASE_INSTR=6
 ;	mov a, #PINMASK
 ;	mov pac, a
 
+	clear refresh
 	clear out0
 	clear out1
 	clear cmp1
@@ -33,6 +43,12 @@ CASE_INSTR=6
 	mov low1_2x, a
 	mov low2_2x, a
 	mov low3_2x, a
+	mov high1_staging, a
+	mov high2_staging, a
+	mov high3_staging, a
+	mov low1_2x_staging, a
+	mov low2_2x_staging, a
+	mov low3_2x_staging, a
 	mov cycle, a
 	clear pin_mask_cur
 	set1 pin_mask_cur, #CHANNEL1
@@ -342,7 +358,7 @@ cycle_42:
 
 .endm
 
-.macro softpwm ?highbits, ?cycle_continue, ?l1, ?l2, ?l3, ?l4, ?l5, ?l6, ?lowbits, ?highbits, ?read_channel_1, ?read_channel_2, ?read_channel_3, ?pre_data, ?post_data
+.macro softpwm ?highbits, ?cycle_continue, ?l1, ?l2, ?l3, ?l4, ?l5, ?l6, ?lowbits, ?highbits, ?read_channel_1, ?read_channel_2, ?read_channel_3, ?pre_data, ?post_data, ?do_refresh
 
 highbits:
 	uart                   ; 50 + 14
@@ -417,12 +433,26 @@ lowbits:
 	softpwm_lowbits highbits
 
 ; no new data
-l2:	nop2                   ; 16 + 2
-	nop                    ; 18 + 1
-	t0sn uart_state, #RESET; 19 + 1
-	goto l5                ; 20 + 2
-	nop                    ; 22 + 1
-	nop2                   ; 23 + 2 idempotent ops
+
+l2:	t0sn refresh, #REFRESH ; 16 + 1
+	goto do_refresh        ; 17 + 2
+	t1sn uart_state, #RESET; 18 + 1
+	goto l5                ; 19 + 2
+	clear error            ; 20 + 1
+	mov a, #READ_CHANNEL_1 ; 21 + 1
+	mov cur_channel, a     ; 22 + 1
+	t0sn refresh, #DATA_OK ; 23 + 1
+	set1 refresh, #REFRESH ; 24 + 1
+	mov a, index_const     ; 25 + 1
+	mov index, a           ; 26 + 1
+	ceqsn a, #0            ; 27 + 1
+	dec cur_channel        ; 28 + 1 state: READ_CHANNEL_1 -> PRE_DATA
+	set0 uart_state, #RESET; 29 + 1
+	goto l4                ; 30 + 2
+
+
+l5:	nop                    ; 21 + 1
+	nop2                   ; 22 + 2 idempotent ops
 	mov a, low             ; 24 + 1 low is written at least 10 samples
 	sr a                   ; 25 + 1 before NEW_DATA is set, ample time
 	sr a                   ; 26 + 1 for this to run at least once
@@ -431,20 +461,8 @@ l2:	nop2                   ; 16 + 2
 	mov low_2x, a          ; 29 + 1
 	goto l4                ; 30 + 2
 
-; reset
-l5:	clear error            ; 22 + 1
-	mov a, #3              ; 23 + 1
-	mov cur_channel, a     ; 24 + 1
-	mov a, index_const     ; 25 + 1
-	mov index, a           ; 26 + 1
-	ceqsn a, #0            ; 27 + 1
-	dec cur_channel        ; 28 + 1
-	set0 uart_state, #RESET; 29 + 1
-	goto l4                ; 30 + 2
-
-l3:	mov a, #PINMASK        ; 44 + 1
-	mov pinmask, a         ; 45 + 1
-	nop                    ; 46 + 1
+l3:	mov a, #PINMASK        ; 45 + 1
+	mov pinmask, a         ; 46 + 1
 	nop                    ; 47 + 1
 	goto highbits          ; 48 + 2
 
@@ -470,49 +488,50 @@ pre_data:
 read_channel_1:
 	inc cur_channel             ; 17 + 1
 	mov a, high                 ; 18 + 1
-	mov high1, a                ; 19 + 1
-	sr high1                    ; 20 + 1
-	inc high1                   ; 21 + 1
+	mov high1_staging, a        ; 19 + 1
+	sr high1_staging            ; 20 + 1
+	inc high1_staging           ; 21 + 1
 	mov a, low_2x               ; 22 + 1
 	t0sn high, #0               ; 23 + 1
 	or a, #32                   ; 24 + 1
-	mov low1_2x, a              ; 25 + 1
-	t0sn high1, #7              ; 26 + 1
+	mov low1_2x_staging, a      ; 25 + 1
+	t0sn high1_staging, #7      ; 26 + 1
 	ceqsn a, #(31*2+1)          ; 27 + 1
-	dec high1                   ; 28 + 1
-	inc high1                   ; 29 + 1
+	dec high1_staging           ; 28 + 1
+	inc high1_staging           ; 29 + 1
 	goto l4                     ; 30 + 2
 
 read_channel_2:
 	inc cur_channel             ; 17 + 1
 	mov a, high                 ; 18 + 1
-	mov high2, a                ; 19 + 1
-	sr high2                    ; 20 + 1
-	inc high2                   ; 21 + 1
+	mov high2_staging, a        ; 19 + 1
+	sr high2_staging            ; 20 + 1
+	inc high2_staging           ; 21 + 1
 	mov a, low_2x               ; 22 + 1
 	t0sn high, #0               ; 23 + 1
 	or a, #32                   ; 24 + 1
-	mov low2_2x, a              ; 25 + 1
-	t0sn high2, #7              ; 26 + 1
+	mov low2_2x_staging, a      ; 25 + 1
+	t0sn high2_staging, #7      ; 26 + 1
 	ceqsn a, #(31*2+1)          ; 27 + 1
-	dec high2                   ; 28 + 1
-	inc high2                   ; 29 + 1
+	dec high2_staging           ; 28 + 1
+	inc high2_staging           ; 29 + 1
 	goto l4                     ; 30 + 2
 
 read_channel_3:
 	inc cur_channel             ; 17 + 1
 	mov a, high                 ; 18 + 1
-	mov high3, a                ; 19 + 1
-	sr high3                    ; 20 + 1
-	inc high3                   ; 21 + 1
+	mov high3_staging, a        ; 19 + 1
+	sr high3_staging            ; 20 + 1
+	inc high3_staging           ; 21 + 1
 	mov a, low_2x               ; 22 + 1
 	t0sn high, #0               ; 23 + 1
 	or a, #32                   ; 24 + 1
-	mov low3_2x, a              ; 25 + 1
-	t0sn high3, #7              ; 26 + 1
+	mov low3_2x_staging, a      ; 25 + 1
+	t0sn high3_staging, #7      ; 26 + 1
 	ceqsn a, #(31*2+1)          ; 27 + 1
-	dec high3                   ; 28 + 1
-	inc high3                   ; 29 + 1
+	dec high3_staging           ; 28 + 1
+;	inc high3_staging           ; XX + 1 moved to do_refresh
+	set1 refresh, #DATA_OK      ; 29 + 1
 	goto l4                     ; 30 + 2
 
 post_data:
@@ -530,15 +549,61 @@ l4:
 	xor a, #(1<<CHANNEL3)       ; 38 + 1
 	xor pa, a                   ; 39 + 1
 
-	set0 uart_state, #NEW_DATA  ; 40 + 1
-	t1sn cycle, #7              ; 41 + 1 .
-	goto l3                     ; 42 + 2  )
-	mov a, #20                  ; 43 + 1 '
-	add cycle, a                ; 44 + 1
-	t1sn pin_cur_6x, #2         ; 45 + 1   if (pin_cur_6x == 0) cycle++;
-	inc cycle                   ; 46 + 1
-	nop                         ; 47 + 1
+	nop                         ; 40 + 1
+	set0 uart_state, #NEW_DATA  ; 41 + 1
+	t1sn cycle, #7              ; 42 + 1 .
+	goto l3                     ; 43 + 2  )
+	mov a, #20                  ; 44 + 1 '
+	add cycle, a                ; 45 + 1
+	t1sn pin_cur_6x, #2         ; 46 + 1   if (pin_cur_6x == 0) cycle++;
+	inc cycle                   ; 47 + 1
 	goto highbits               ; 48 + 2
+
+do_refresh:
+
+	inc high3_staging           ; 19 + 1 moved from read_channel_3
+
+	mov a, high1_staging        ; 20 + 1
+	mov high1, a                ; 21 + 1
+
+	mov a, high2_staging        ; 22 + 1
+	mov high2, a                ; 23 + 1
+
+	mov a, high3_staging        ; 24 + 1
+	mov high3, a                ; 25 + 1
+
+	mov a, low1_2x_staging      ; 26 + 1
+	mov low1_2x, a              ; 27 + 1
+
+	mov a, low2_2x_staging      ; 28 + 1
+	mov low2_2x, a              ; 29 + 1
+
+	mov a, low3_2x_staging      ; 30 + 1
+	mov low3_2x, a              ; 31 + 1
+
+; duplicated bit for lack of a cycle :-(
+
+	mov a, #PINMASK             ; 32 + 1
+	dzsn cmp1                   ; 33 + 1
+	xor a, #(1<<CHANNEL1)       ; 34 + 1
+	dzsn cmp2                   ; 35 + 1
+	xor a, #(1<<CHANNEL2)       ; 36 + 1
+	dzsn cmp3                   ; 37 + 1
+	xor a, #(1<<CHANNEL3)       ; 38 + 1
+	xor pa, a                   ; 39 + 1
+
+	clear refresh               ; 40 + 1  <---- cycle needed in duplicated bit
+	set0 uart_state, #NEW_DATA  ; 41 + 1
+	t1sn cycle, #7              ; 42 + 1 .
+	goto l3                     ; 43 + 2  )
+	mov a, #20                  ; 44 + 1 '
+	add cycle, a                ; 45 + 1
+	t1sn pin_cur_6x, #2         ; 46 + 1   if (pin_cur_6x == 0) cycle++;
+	inc cycle                   ; 47 + 1
+	goto highbits               ; 48 + 2
+
+; end duplicated bit
+
 
 .endm
 

@@ -29,9 +29,12 @@ cycle:          .ds 1
 pin_cur_6x:     .ds 1
 
 high:           .ds 1
-high1:          .ds 1
-high2:          .ds 1
-high3:          .ds 1
+high1_staging:  .ds 1
+high2_staging:  .ds 1
+high3_staging:  .ds 1
+
+refresh:        .ds 1
+dummy:          .ds 1
 ; word aligned
 ;...
 p_lo:           .ds 1
@@ -48,6 +51,12 @@ reset_count:    .ds 1
 low:            .ds 1
 low_2x:         .ds 1
 
+low1_2x_staging:.ds 1
+low2_2x_staging:.ds 1
+low3_2x_staging:.ds 1
+high1:          .ds 1
+high2:          .ds 1
+high3:          .ds 1
 cmp1:           .ds 1
 cmp2:           .ds 1
 cmp3:           .ds 1
