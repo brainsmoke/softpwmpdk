@@ -3,13 +3,10 @@ CHANNEL1  = 4
 CHANNEL2  = 3
 CHANNEL3  = 6
 PINMASK   = ( (1<<CHANNEL1) | (1<<CHANNEL2) | (1<<CHANNEL3) )
-PINMASK12 = ( (1<<CHANNEL1) | (1<<CHANNEL2) )
 
 CASE_INSTR=6
 
-.globl INDEX_CH1
-.globl INDEX_CH2
-.globl INDEX_CH3
+.globl INDEX
 
 ;
 ; STATE MACHINE:
@@ -20,7 +17,7 @@ CASE_INSTR=6
 
 ;	mov a, #0
 ;	mov pa, a
-;	mov a, #( (1<<CHANNEL1) | (1<<CHANNEL2) | (1<<CHANNEL3) )
+;	mov a, #PINMASK
 ;	mov pac, a
 
 	clear out0
@@ -37,7 +34,6 @@ CASE_INSTR=6
 	mov low2_2x, a
 	mov low3_2x, a
 	mov cycle, a
-	clear low_cur_2x
 	clear pin_mask_cur
 	set1 pin_mask_cur, #CHANNEL1
 	mov a, #PINMASK
@@ -346,7 +342,7 @@ cycle_42:
 
 .endm
 
-.macro softpwm ?highbits, ?cycle_continue, ?l1, ?l2, ?l3, ?l4, ?l5, ?l6, ?lowbits, ?highbits, ?not_ch1, ?not_ch2, ?not_ch3, ?end_ch
+.macro softpwm ?highbits, ?cycle_continue, ?l1, ?l2, ?l3, ?l4, ?l5, ?l6, ?lowbits, ?highbits, ?read_channel_1, ?read_channel_2, ?read_channel_3, ?pre_data, ?post_data
 
 highbits:
 	uart                   ; 50 + 14
@@ -386,6 +382,7 @@ highbits:
 	mov cmp1, a            ; 32 + 1
 	mov a, low1_2x         ; 33 + 1
 	goto l1                ; 34 + 2
+	switchcase_filler (CASE_INSTR-6) ; should be 0 instructions here
 ; CHANNEL2
 	dzsn cmp2              ; 29 + 1
 	set0 pinmask, #CHANNEL2; 30 + 1
@@ -393,6 +390,7 @@ highbits:
 	mov cmp2, a            ; 32 + 1
 	mov a, low2_2x         ; 33 + 1
 	goto l1                ; 34 + 2
+	switchcase_filler (CASE_INSTR-6) ; should be 0 instructions here
 ; CHANNEL3
 	dzsn cmp3              ; 29 + 1
 	set0 pinmask, #CHANNEL3; 30 + 1
@@ -400,6 +398,7 @@ highbits:
 	mov cmp3, a            ; 32 + 1
 	mov a, low3_2x         ; 33 + 1
 	goto l1                ; 34 + 2
+	switchcase_filler (CASE_INSTR-6) ; should be 0 instructions here
 l1:	mov low_cur_2x, a      ; 36 + 1
 	mov a, out1            ; 37 + 1
 	xor a, #PINMASK        ; 38 + 1
@@ -417,16 +416,30 @@ l1:	mov low_cur_2x, a      ; 36 + 1
 lowbits:
 	softpwm_lowbits highbits
 
-l2:	delay (21-14)          ; 14 + ..
-	t0sn uart_state, #RESET; 21 + 1 idempotent ops
-	clear error            ; 22 + 1
-	t0sn uart_state, #RESET; 23 + 1
-	clear index            ; 24 + 1
-	set0 uart_state, #RESET; 25 + 1
-	mov a, #(8*31)         ; 26 + 1
-	and low, a             ; 27 + 1
-	mov a, #4              ; 28 + 1
-	or low, a              ; 29 + 1
+; no new data
+l2:	nop2                   ; 16 + 2
+	nop                    ; 18 + 1
+	t0sn uart_state, #RESET; 19 + 1
+	goto l5                ; 20 + 2
+	nop                    ; 22 + 1
+	nop2                   ; 23 + 2 idempotent ops
+	mov a, low             ; 24 + 1 low is written at least 10 samples
+	sr a                   ; 25 + 1 before NEW_DATA is set, ample time
+	sr a                   ; 26 + 1 for this to run at least once
+	sr a                   ; 27 + 1
+	or a, #1               ; 28 + 1
+	mov low_2x, a          ; 29 + 1
+	goto l4                ; 30 + 2
+
+; reset
+l5:	clear error            ; 22 + 1
+	mov a, #3              ; 23 + 1
+	mov cur_channel, a     ; 24 + 1
+	mov a, #INDEX          ; 25 + 1
+	mov index, a           ; 26 + 1
+	ceqsn a, #0            ; 27 + 1
+	dec cur_channel        ; 28 + 1
+	set0 uart_state, #RESET; 29 + 1
 	goto l4                ; 30 + 2
 
 l3:	mov a, #PINMASK        ; 44 + 1
@@ -437,51 +450,76 @@ l3:	mov a, #PINMASK        ; 44 + 1
 
 cycle_continue:
 
-	t1sn uart_state, #NEW_DATA  ; 11 + 1 .
-	goto l2                     ; 12 + 2  )
-	mov a, index                ; 13 + 1
-	ceqsn a, #INDEX_CH1         ; 14 + 1 .
-	goto not_ch1                ; 15 + 2  )
-	mov a, high                 ; 16 + 1 '
-	add a, #1                   ; 17 + 1
-	mov high1, a                ; 18 + 1
-	mov a, low                  ; 19 + 1
-	sr a                        ; 20 + 1
-	sr a                        ; 21 + 1
-	mov low1_2x, a              ; 22 + 1
-not_ch3:
-	nop2                        ; 23 + 2
-	nop2                        ; 25 + 2
-	goto end_ch                 ; 27 + 2
+	mov a, cur_channel          ; 11 + 1
+	t0sn uart_state, #NEW_DATA  ; 12 + 1 .
+	pcadd a                     ; 13 + 2  )
+	goto l2                     ; 14 + 2 '
 
-not_ch1:
-	ceqsn a, #INDEX_CH2         ; 17 + 1 .
-	goto not_ch2                ; 18 + 2  )
-	mov a, high                 ; 19 + 1 '
-	add a, #1                   ; 20 + 1
-	mov high2, a                ; 21 + 1
-	mov a, low                  ; 22 + 1
-	sr a                        ; 23 + 1
-	sr a                        ; 24 + 1
+	goto pre_data               ; 15 + 2
+	goto read_channel_1         ; 15 + 2
+	goto read_channel_2         ; 15 + 2
+	goto read_channel_3         ; 15 + 2
+	goto post_data              ; 15 + 2
+
+pre_data:
+	dzsn index                  ; 17 + 1
+	dec cur_channel             ; 18 + 1
+	inc cur_channel             ; 19 + 1
+	goto l6                     ; 20 + 2
+
+read_channel_1:
+	inc cur_channel             ; 17 + 1
+	mov a, high                 ; 18 + 1
+	mov high1, a                ; 19 + 1
+	sr high1                    ; 20 + 1
+	inc high1                   ; 21 + 1
+	mov a, low_2x               ; 22 + 1
+	t0sn high, #0               ; 23 + 1
+	or a, #32                   ; 24 + 1
+	mov low1_2x, a              ; 25 + 1
+	t0sn high1, #7              ; 26 + 1
+	ceqsn a, #(31*2+1)          ; 27 + 1
+	dec high1                   ; 28 + 1
+	inc high1                   ; 29 + 1
+	goto l4                     ; 30 + 2
+
+read_channel_2:
+	inc cur_channel             ; 17 + 1
+	mov a, high                 ; 18 + 1
+	mov high2, a                ; 19 + 1
+	sr high2                    ; 20 + 1
+	inc high2                   ; 21 + 1
+	mov a, low_2x               ; 22 + 1
+	t0sn high, #0               ; 23 + 1
+	or a, #32                   ; 24 + 1
 	mov low2_2x, a              ; 25 + 1
-	nop                         ; 26 + 1
-	goto end_ch                 ; 27 + 2
+	t0sn high2, #7              ; 26 + 1
+	ceqsn a, #(31*2+1)          ; 27 + 1
+	dec high2                   ; 28 + 1
+	inc high2                   ; 29 + 1
+	goto l4                     ; 30 + 2
 
-not_ch2:
-	ceqsn a, #INDEX_CH3         ; 20 + 1 .
-	goto not_ch3                ; 21 + 2  )
-	mov a, high                 ; 22 + 1 '
-	add a, #1                   ; 23 + 1
-	mov high3, a                ; 24 + 1
-	mov a, low                  ; 25 + 1
-	sr a                        ; 26 + 1
-	sr a                        ; 27 + 1
-	mov low3_2x, a              ; 28 + 1
-	
-end_ch:
-	izsn index                  ; 29 + 1
-	inc index                   ; 30 + 1
-	dec index                   ; 31 + 1
+read_channel_3:
+	inc cur_channel             ; 17 + 1
+	mov a, high                 ; 18 + 1
+	mov high3, a                ; 19 + 1
+	sr high3                    ; 20 + 1
+	inc high3                   ; 21 + 1
+	mov a, low_2x               ; 22 + 1
+	t0sn high, #0               ; 23 + 1
+	or a, #32                   ; 24 + 1
+	mov low3_2x, a              ; 25 + 1
+	t0sn high3, #7              ; 26 + 1
+	ceqsn a, #(31*2+1)          ; 27 + 1
+	dec high3                   ; 28 + 1
+	inc high3                   ; 29 + 1
+	goto l4                     ; 30 + 2
+
+post_data:
+	nop                         ; 17 + 1
+	nop2                        ; 18 + 2
+	nop2                        ; 20 + 2
+l6:	delay (32-22)               ; 22 + ...
 l4:
 	mov a, #PINMASK             ; 32 + 1
 	dzsn cmp1                   ; 33 + 1

@@ -20,12 +20,11 @@ RESET=3
 	mov a, #MASK_UART
 	mov paph, a
 	clear error
-	mov a, #(1<<IDLE)
+	mov a, #( (1<<IDLE) | (1<<RESET) )
 	mov uart_state, a
 	clear shiftreg
 	clear high
 	clear low
-	clear index
 	clear bit_count
 	clear reset_count
 	clear wait_count

@@ -40,10 +40,6 @@ clean:
 	sdldpdk -muwx -g INDEX=$$(($(ADDRESS)*3)) -i $@ -Y $< -e
 	-rm $(@:.ihx=.cdb) $(@:.ihx=.lst) $(@:.ihx=.map) $(@:.ihx=.rel) $(@:.ihx=.rst) $(@:.ihx=.sym)
 
-leddriver12bit-%.ihx: leddriver12bit-%.rel
-	sdldpdk -muwx -g INDEX_CH1=$$(($(ADDRESS)*3+0)) -g INDEX_CH2=$$(($(ADDRESS)*3+1)) -g INDEX_CH3=$$(($(ADDRESS)*3+2)) -i $@ -Y $< -e
-	-rm $(@:.ihx=.cdb) $(@:.ihx=.lst) $(@:.ihx=.map) $(@:.ihx=.rel) $(@:.ihx=.rst) $(@:.ihx=.sym)
-
 write13: $(TARGET13)
 	$(PROG) -p $(DEVICE) -n $(NAME13) write $(TARGET13)
 

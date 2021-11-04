@@ -26,26 +26,28 @@ uart_tmp:       .ds 1
 
 cycle:          .ds 1
 pin_cur_6x:     .ds 1
+
+high:           .ds 1
+high1:          .ds 1
+high2:          .ds 1
+high3:          .ds 1
 ; word aligned
 ;...
 
 ;
 index:          .ds 1
-local_index:    .ds 1
+cur_channel:    .ds 1
 
 wait_count:     .ds 1
 bit_count:      .ds 1
 reset_count:    .ds 1
 
 low:            .ds 1
-high:           .ds 1
+low_2x:         .ds 1
 
 cmp1:           .ds 1
 cmp2:           .ds 1
 cmp3:           .ds 1
-high1:          .ds 1
-high2:          .ds 1
-high3:          .ds 1
 low1_2x:        .ds 1
 low2_2x:        .ds 1
 low3_2x:        .ds 1
@@ -77,7 +79,7 @@ FREQ=3840000
 
 easypdk_calibrate FREQ, 3300
 
-mov a, #( (1<<CHANNEL1) | (1<<CHANNEL2) | (1<<CHANNEL3) )
+mov a, #PINMASK
 mov pac, a
 mov a, #0
 mov pa, a
