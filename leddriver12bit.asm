@@ -4,6 +4,7 @@ BUFSIZE=8
 
 .include "pdk.asm"
 .include "delay.asm"
+.include "settings.asm"
 .include "uart2.asm"
 .include "softpwm12.asm"
 
@@ -33,6 +34,8 @@ high2:          .ds 1
 high3:          .ds 1
 ; word aligned
 ;...
+p_lo:           .ds 1
+p_hi:           .ds 1
 
 ;
 index:          .ds 1
@@ -53,12 +56,14 @@ low2_2x:        .ds 1
 low3_2x:        .ds 1
 low_cur_2x:     .ds 1
 
+index_const:    .ds 1
+
 .area CODE (ABS)
 .org 0x00
 
 ; pull mosfets low first
 
-clock_4mhz
+clock_8mhz
 
 ;
 ;   ________                                                                        ________
@@ -67,7 +72,7 @@ clock_4mhz
 ;           |-----------| (start_wait+1/2)*interval                                   9 1/2 baud
 ;        time to first sample (avg)                                               sample stop bit (avg)
 ;
-;baud = 20000
+;baud = 38400
 ;start_wait = 4
 ;bit_wait = 3
 ;check_interval = 64
@@ -75,7 +80,7 @@ clock_4mhz
 ;t = 9.5/baud
 ;freq = cycles/t
 ;print(freq)
-FREQ=3840000
+FREQ=7372800
 
 easypdk_calibrate FREQ, 3300
 
@@ -83,9 +88,19 @@ mov a, #PINMASK
 mov pac, a
 mov a, #0
 mov pa, a
-	
+
+find_settings settings p_lo
+read_settings index_const
+
 softpwm_init
 uart_init
 
 softpwm
 
+settings:
+;.rept 256
+;nop
+;.endm
+mov a, #INDEX
+; update index by nopping (0x0000) out this instruction and appending a new mov, #NEW_INDEX
+;

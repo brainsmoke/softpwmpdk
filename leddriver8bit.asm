@@ -2,6 +2,7 @@
 .module softpwmpdk
 
 .include "pdk.asm"
+.include "settings.asm"
 .include "uart.asm"
 .include "softpwm8.asm"
 
@@ -33,6 +34,12 @@ buf_index:      .ds 1
 buf_index_high: .ds 1 ; needs to be zero
 stream_index:   .ds 1
 
+index_const:    .ds 1
+
+; word aligned
+p_lo:           .ds 1
+p_hi:           .ds 1
+
 .area CODE (ABS)
 .org 0x00
 
@@ -47,15 +54,16 @@ stream_index:   .ds 1
 ;          1/8 baud                                                                   9 1/2 baud
 ;    sample start bit (avg)                                                      sample stop bit (avg)
 ;
-; baud = 19200
-; start_wait = 6
-; bit_wait = 4
-; check_interval = 3*17
-; cycles = (start_wait+8*bit_wait)*check_interval
-; t = (9.5 - .125)/baud
-; freq = cycles/t
+;baud = 19200
+;start_wait = 6
+;bit_wait = 4
+;check_interval = 3*17
+;cycles = (.5+start_wait+8*bit_wait)*check_interval
+;t = 9.5/baud
+;freq = cycles/t
+;print(freq)
 ;
-FREQ=3969024
+FREQ=3968337
 
 	easypdk_calibrate FREQ, 3300
 
@@ -64,6 +72,9 @@ FREQ=3969024
 	mov a, #0
 	mov pa, a
 	
+	find_settings settings p_lo
+	read_settings index_const
+
 	softpwm_init
 	uart_init
 
@@ -90,4 +101,12 @@ FREQ=3969024
 	u_store:
 	softpwm
 	uart_store u_idle
+
+settings:
+;.rept 256
+;nop
+;.endm
+mov a, #INDEX
+; update index by nopping (0x0000) out this instruction and appending a new mov, #NEW_INDEX
+;
 

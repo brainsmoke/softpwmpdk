@@ -435,7 +435,7 @@ l2:	nop2                   ; 16 + 2
 l5:	clear error            ; 22 + 1
 	mov a, #3              ; 23 + 1
 	mov cur_channel, a     ; 24 + 1
-	mov a, #INDEX          ; 25 + 1
+	mov a, index_const     ; 25 + 1
 	mov index, a           ; 26 + 1
 	ceqsn a, #0            ; 27 + 1
 	dec cur_channel        ; 28 + 1

@@ -112,7 +112,7 @@ l1:	goto out_countdown      ; 7 + 2 = 9
 	t1sn pa, #PIN_UART         ; 1 + 1
 	goto l0                    ; 2 + 1 | 2 --. [ stop bit needs to be high ]
 	mov a, stream_index        ; 3 + 1       |
-	sub a, #INDEX              ; 4 + 1       |
+	sub a, index_const         ; 4 + 1       |
 	mov buf_index, a           ; 5 + 1       |
 	inc stream_index           ; 6 + 1       |
 	goto out_store             ; 7 + 2 = 9   |
