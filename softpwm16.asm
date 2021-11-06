@@ -4,7 +4,7 @@ CHANNEL2  = 3
 CHANNEL3  = 6
 PINMASK   = ( (1<<CHANNEL1) | (1<<CHANNEL2) | (1<<CHANNEL3) )
 
-REFRESH   = 1 ; should not be the same a any of the channel bits
+REFRESH   = 2 ; should not be the same a any of the channel bits
 DATA_OK   = 1 ; should not be the same a any of the channel bits
 
 CASE_CHANNEL_PRE_INSTR=3
