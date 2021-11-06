@@ -5,10 +5,15 @@ TARGET14=leddriver8bit-pdk14.ihx
 TARGET13A=leddriver12bit-pdk13.ihx
 TARGET14A=leddriver12bit-pdk14.ihx
 
-TARGETS=$(TARGET13) $(TARGET14) $(TARGET13A) $(TARGET14A)
+TARGET13B=leddriver16bit-pdk13.ihx
+TARGET14B=leddriver16bit-pdk14.ihx
+
+TESTS=lowbits16_test-pdk14.ihx
+
+TARGETS=$(TARGET13) $(TARGET14) $(TARGET13A) $(TARGET14A) $(TARGET13B) $(TARGET14B) $(TESTS)
 
 CLEAN=$(TARGETS)
-DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm
+DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.asm
 
 DEVICE=/dev/ttyACM0
 
