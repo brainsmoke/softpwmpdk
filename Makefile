@@ -13,7 +13,7 @@ TESTS=lowbits16_test-pdk14.ihx
 TARGETS=$(TARGET13) $(TARGET14) $(TARGET13A) $(TARGET14A) $(TARGET13B) $(TARGET14B) $(TESTS)
 
 CLEAN=$(TARGETS)
-DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.asm
+DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.asm settings.asm
 
 DEVICE=/dev/ttyACM0
 

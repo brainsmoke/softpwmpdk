@@ -390,7 +390,7 @@ cycle_42:
 
 .endm
 
-.macro softpwm ?highbits, ?l1, ?pre_switch, ?l2, ?lowbits, ?cycle_continue, ?pre_data, ?post_data, ?read_channel_1, ?read_channel_2, ?read_channel_3, ?cycle_44, ?cycle_29, ?cycle_38, ?no_new_data, ?idempotent_ops, ?do_reset, ?do_refresh
+.macro softpwm ?highbits, ?l1, ?pre_switch, ?l2, ?lowbits, ?cycle_continue, ?pre_data, ?post_data, ?read_channel_1, ?read_channel_2, ?read_channel_3, ?cycle_44, ?cycle_29, ?cycle_38, ?no_new_data, ?idempotent_ops, ?do_reset, ?do_refresh, ?switch_new_data
 
 highbits:
 	uart                   ; 50 + 14
@@ -531,6 +531,7 @@ cycle_continue:
 	mov out1, a                 ; 18 + 1
 	mov a, cur_channel          ; 19 + 1
 	t0sn uart_state, #NEW_DATA  ; 20 + 1 .
+switch_new_data:
 	pcadd a                     ; 21 + 2  )
 	goto no_new_data            ; 22 + 2 '
 	.ifne (PRE_DATA-2)
