@@ -32,10 +32,11 @@ import intelhex, pdk
 BIT_UART = (1<<0)
 CHANNELS = [ 4, 3, 6 ]
 
+RESET_SAMPLES=65
 STOP_BITS=5
 SAMPLES_PER_BYTE = (9+STOP_BITS)
 program = []
-ix = 0
+ix = -RESET_SAMPLES
 
 offset = 3
 uart_data = bytes.fromhex(''.join(c for c in sys.argv[2] if c in '0123456789ABCDEFabcdef'))
@@ -44,7 +45,7 @@ def uart_next(ctx):
     global ix
 
     byte = (ix // SAMPLES_PER_BYTE)
-    if byte >= len(uart_data):
+    if byte < 0 or byte >= len(uart_data):
         val = BIT_UART
     else:
         bit = ix % SAMPLES_PER_BYTE
