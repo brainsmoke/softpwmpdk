@@ -110,6 +110,8 @@ clock_8mhz
 FREQ=7372800
 
 easypdk_calibrate FREQ, 3300
+watchdog_enable
+wdreset
 
 mov a, #PINMASK
 mov pac, a
@@ -122,6 +124,7 @@ read_settings index_const
 softpwm_init
 uart_init
 
+wdreset
 softpwm
 
 settings:
