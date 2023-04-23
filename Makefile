@@ -21,8 +21,8 @@ DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.a
 
 DEVICE=/dev/ttyACM0
 
-AS13=sdaspdk13
-AS14=sdaspdk14
+AS13=sdaspdk13 -Ipdk13
+AS14=sdaspdk14 -Ipdk14
 
 PROG=easypdkprog
 
