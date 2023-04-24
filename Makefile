@@ -17,7 +17,7 @@ TARGETS=$(TARGET13_8BIT) $(TARGET14_8BIT) \
         $(TARGET13_16BIT) $(TARGET14_16BIT)
 
 CLEAN=$(TARGETS)
-DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.asm settings.asm
+DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.asm settings.asm device/pms150c/part.asm device/pfs154/part.asm
 
 DEVICE=/dev/ttyACM0
 
