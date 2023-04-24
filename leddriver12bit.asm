@@ -70,9 +70,13 @@ index_const:    .ds 1
 .area CODE (ABS)
 .org 0x00
 
+.ifeq DEVICE-PMS150C
+set_fuse FUSE_SET_LVR_2V75
+.endif
 ; pull mosfets low first
 
 clock_8mhz
+brownout_erratum_workaround_init
 
 ;
 ;   ________                                                                        ________
@@ -98,12 +102,16 @@ mov pac, a
 mov a, #0
 mov pa, a
 
+watchdog_enable
+wdreset
+
 find_settings settings p_lo
 read_settings index_const
 
 softpwm_init
 uart_init
 
+wdreset
 softpwm
 
 settings:

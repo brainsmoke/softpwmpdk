@@ -413,8 +413,10 @@ highbits:
 	mov a, high3           ; 31 + 1
 	mov cmp3, a            ; 32 + 1
 	mov a, low3_2x         ; 33 + 1
-	goto l1                ; 34 + 2
-	switchcase_filler (CASE_INSTR-6) ; should be 0 instructions here
+;	goto l1                ; 34 + 2
+;	switchcase_filler (CASE_INSTR-6) ; should be 0 instructions here
+	wdreset                ; 34 + 1
+	nop                    ; 35 + 1
 l1:	mov low_cur_2x, a      ; 36 + 1
 	mov a, out1            ; 37 + 1
 	xor a, #PINMASK        ; 38 + 1

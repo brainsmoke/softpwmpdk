@@ -43,9 +43,13 @@ p_hi:           .ds 1
 .area CODE (ABS)
 .org 0x00
 
+.ifeq DEVICE-PMS150C
+set_fuse FUSE_SET_LVR_2V2
+.endif
 ; pull mosfets low first
 
 	clock_4mhz
+brownout_erratum_workaround_init
 
 ;
 ;   ________                                                                        ________
