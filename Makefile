@@ -1,14 +1,14 @@
 
 
 
-TARGET13_8BIT=leddriver8bit-pdk13.ihx
-TARGET14_8BIT=leddriver8bit-pdk14.ihx
+TARGET13_8BIT=leddriver8bit-pms150c.ihx
+TARGET14_8BIT=leddriver8bit-pfs154.ihx
 
-TARGET13_12BIT=leddriver12bit-pdk13.ihx
-TARGET14_12BIT=leddriver12bit-pdk14.ihx
+TARGET13_12BIT=leddriver12bit-pms150c.ihx
+TARGET14_12BIT=leddriver12bit-pfs154.ihx
 
-TARGET13_16BIT=leddriver16bit-pdk13.ihx
-TARGET14_16BIT=leddriver16bit-pdk14.ihx
+TARGET13_16BIT=leddriver16bit-pms150c.ihx
+TARGET14_16BIT=leddriver16bit-pfs154.ihx
 
 TESTS=lowbits16_test-pdk14.ihx
 
@@ -21,13 +21,16 @@ DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.a
 
 DEVICE=/dev/ttyACM0
 
-AS13=sdaspdk13 -Ipdk13
-AS14=sdaspdk14 -Ipdk14
+AS13=sdaspdk13
+AS14=sdaspdk14
 
 PROG=easypdkprog
 
 NAME13=PMS150C
 NAME14=PFS154
+
+INC13=-Idevice/pms150c
+INC14=-Idevice/pfs154
 
 ADDRESS=0
 
@@ -39,11 +42,11 @@ clean:
 	-rm $(CLEAN)
 	-rm *.ihx *.cdb *.lst *.map *.rel *.rst *.sym
 
-%-pdk13.rel: %.asm $(DEPS)
-	$(AS13) -s -o -l $@ $<
+%-pms150c.rel: %.asm $(DEPS)
+	$(AS13) $(INC13) -s -o -l $@ $<
 
-%-pdk14.rel: %.asm $(DEPS)
-	$(AS14) -s -o -l $@ $<
+%-pfs154.rel: %.asm $(DEPS)
+	$(AS14) $(INC14) -s -o -l $@ $<
 
 %.ihx: %.rel
 	sdldpdk -muwx -g INDEX=$$(($(ADDRESS)*3)) -i $@ -Y $< -e
