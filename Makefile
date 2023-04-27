@@ -1,11 +1,6 @@
 
-
-
 TARGET13_8BIT=leddriver8bit-pms150c.ihx
 TARGET14_8BIT=leddriver8bit-pfs154.ihx
-
-TARGET13_12BIT=leddriver12bit-pms150c.ihx
-TARGET14_12BIT=leddriver12bit-pfs154.ihx
 
 TARGET13_16BIT=leddriver16bit-pms150c.ihx
 TARGET14_16BIT=leddriver16bit-pfs154.ihx
@@ -13,11 +8,10 @@ TARGET14_16BIT=leddriver16bit-pfs154.ihx
 TESTS=lowbits16_test-pdk14.ihx
 
 TARGETS=$(TARGET13_8BIT) $(TARGET14_8BIT) \
-        $(TARGET13_12BIT) $(TARGET14_12BIT) \
         $(TARGET13_16BIT) $(TARGET14_16BIT)
 
 CLEAN=$(TARGETS)
-DEPS=softpwm8.asm pdk.asm uart.asm softpwm12.asm uart2.asm delay.asm softpwm16.asm settings.asm device/pms150c/part.asm device/pfs154/part.asm
+DEPS=softpwm8.asm pdk.asm uart.asm uart2.asm delay.asm softpwm16.asm settings.asm device/pms150c/part.asm device/pfs154/part.asm
 
 DEVICE=/dev/ttyACM0
 
@@ -63,14 +57,6 @@ write8_13: $(TARGET13_8BIT)
 
 write8_14: $(TARGET14_8BIT)
 	$(PROG) -p $(DEVICE) -n $(NAME14) write $(TARGET14_8BIT)
-
-
-write12_13: $(TARGET13_12BIT)
-	$(PROG) -p $(DEVICE) -n $(NAME13) write $(TARGET13_12BIT)
-
-write12_14: $(TARGET14_12BIT)
-	$(PROG) -p $(DEVICE) -n $(NAME14) write $(TARGET14_12BIT)
-
 
 write16_13: $(TARGET13_16BIT)
 	$(PROG) -p $(DEVICE) -n $(NAME13) write $(TARGET13_16BIT)
