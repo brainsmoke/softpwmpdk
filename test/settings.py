@@ -31,10 +31,17 @@ import intelhex, pdk
 
 arch = sys.argv[1]
 filename = sys.argv[2]
-index = int(sys.argv[3])
-if index > 85:
-    raise ValueError("address > 85")
-led_address = index*3
+command = sys.argv[3]
+
+if command not in ('get_address', 'set_address'):
+    raise ValueError("command not in ('get_address', 'set_address')")
+
+if command == 'set_address':
+    index = int(sys.argv[4])
+    if index > 85:
+         raise ValueError("address > 85")
+
+    led_address = index*3
 
 TRY_CYCLES_MAX = 10000
 
@@ -61,6 +68,12 @@ for i in range(TRY_CYCLES_MAX):
         break
 else:
     raise Exception("no LDSPTL near the start of execution")
+
+if command == 'get_address':
+    if read_address % 3 != 0:
+        raise Exception("address not a multiple of 3")
+    print(read_address//3)
+    sys.exit()
 
 cur_opcode = program[addr][2]
 next_opcode = program[addr+1][2]
