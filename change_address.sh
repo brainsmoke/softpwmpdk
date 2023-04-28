@@ -26,9 +26,9 @@ if [ "x$PART" = "xPFS154" ]; then
 fi
 
 run easypdkprog -p "$PROG" -n "$PART" read "$TMP_IN" && \
-run python3 tests16/change_address_hexfile.py "$ARCH" "$TMP_IN" "$ADDRESS" > "$TMP_OUT" && \
+run python3 test/change_address_hexfile.py "$ARCH" "$TMP_IN" "$ADDRESS" > "$TMP_OUT" && \
 run easypdkprog -p "$PROG" -n "$PART" --nocalibrate --noblankchk --noerase write "$TMP_OUT" && \
 run easypdkprog -p "$PROG" -n "$PART" read "$TMP_IN" && \
-run python3 tests16/change_address_hexfile.py "$ARCH" "$TMP_IN" "$ADDRESS" > /dev/null || echo "Failed"
+run python3 test/change_address_hexfile.py "$ARCH" "$TMP_IN" "$ADDRESS" > /dev/null || echo "Failed"
 
 
