@@ -91,7 +91,7 @@ def generate(m):
                     s+=generate_line(base_addr+start, line[start:i])
                 start = i+1
         if start < 32:
-            s+=generate_line(base_addr+start, line[start:32-start])
+            s+=generate_line(base_addr+start, line[start:32])
     s += _record(0,1,[])
     return s
 
