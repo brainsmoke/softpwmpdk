@@ -1,17 +1,13 @@
 
-TARGET13_8BIT=leddriver8bit-pms150c.ihx
-TARGET14_8BIT=leddriver8bit-pfs154.ihx
-
-TARGET13_16BIT=leddriver16bit-pms150c.ihx
-TARGET14_16BIT=leddriver16bit-pfs154.ihx
+TARGET13=leddriver16bit-pms150c.ihx
+TARGET14=leddriver16bit-pfs154.ihx
 
 TESTS=lowbits16_test-pdk14.ihx
 
-TARGETS=$(TARGET13_8BIT) $(TARGET14_8BIT) \
-        $(TARGET13_16BIT) $(TARGET14_16BIT)
+TARGETS=$(TARGET13) $(TARGET14)
 
 CLEAN=$(TARGETS)
-DEPS=softpwm8.asm pdk.asm uart.asm uart2.asm delay.asm softpwm16.asm settings.asm device/pms150c/part.asm device/pfs154/part.asm
+DEPS=pdk.asm uart2.asm delay.asm softpwm16.asm settings.asm device/pms150c/part.asm device/pfs154/part.asm
 
 DEVICE=/dev/ttyACM0
 

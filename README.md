@@ -11,19 +11,22 @@
 * no output line, led index is hard-coded in the firmware
 * tested on PFS154 & PMS150C
 
+## Write firmware:
 
-# 3-channel 8 bit software PWM LED driver
+```
+$ ./write.sh 0 # use the first 6 bytes as pixel data
 
-* 912Hz, 8-bit PWM
-* 3-channels, evenly spaced phase offsets
-* inverse polarity compared to WS2811 (pin high = LED on)
-* UART based signalling (19200 baud,)
-* end-of-frame is determined using a reset delay (between 1-2msec)
-* no output line, led index is hard-coded in the firmware
-* tested on PFS154 & PMS150C
+$ ./write.sh 1 # use the bytes 6..11 as pixel data
+```
 
+## Read address:
 
-# Change address:
+```
+$ ./read_address.sh
+Address: 0
+```
+
+## Change address:
 
 Even on one-time programmable chips, a limited number of address changes
 if possible:
