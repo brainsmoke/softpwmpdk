@@ -16,7 +16,7 @@
 ```
 $ ./write.sh 0 # use the first 6 bytes as pixel data
 
-$ ./write.sh 1 # use the bytes 6..11 as pixel data
+$ ./write.sh 1 # use bytes 6..11 as pixel data
 ```
 
 ## Read address:
