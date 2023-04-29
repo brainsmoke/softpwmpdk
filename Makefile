@@ -28,7 +28,7 @@ INC14=-Idevice/pfs154
 
 ADDRESS=0
 
-.PHONY: write13 erase13 write14 erase14
+.PHONY: erase13 erase14
 
 all: $(TARGETS)
 
@@ -51,17 +51,4 @@ erase13:
 
 erase14:
 	$(PROG) -p $(DEVICE) -n $(NAME14) erase
-
-write8_13: $(TARGET13_8BIT)
-	$(PROG) -p $(DEVICE) -n $(NAME13) write $(TARGET13_8BIT)
-
-write8_14: $(TARGET14_8BIT)
-	$(PROG) -p $(DEVICE) -n $(NAME14) write $(TARGET14_8BIT)
-
-write16_13: $(TARGET13_16BIT)
-	$(PROG) -p $(DEVICE) -n $(NAME13) write $(TARGET13_16BIT)
-
-write16_14: $(TARGET14_16BIT)
-	$(PROG) -p $(DEVICE) -n $(NAME14) write $(TARGET14_16BIT)
-
 
