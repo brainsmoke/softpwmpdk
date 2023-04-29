@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2020 Erik Bosman <erik@minemu.org>
+# Copyright (c) 2023 Erik Bosman <erik@minemu.org>
 #
 # Permission  is  hereby  granted,  free  of  charge,  to  any  person
 # obtaining  a copy  of  this  software  and  associated documentation
@@ -29,75 +29,99 @@ import sys
 
 import intelhex, pdk
 
-arch = sys.argv[1]
-filename = sys.argv[2]
-command = sys.argv[3]
-
-if command not in ('get_address', 'set_address'):
-    raise ValueError("command not in ('get_address', 'set_address')")
-
-if command == 'set_address':
-    index = int(sys.argv[4])
-    if index > 85:
-         raise ValueError("address > 85")
-
-    led_address = index*3
-
 TRY_CYCLES_MAX = 10000
 
-if arch not in ('pdk13', 'pdk14'):
-    raise ValueError("arch not in ('pdk13', 'pdk14')")
+def get_settings_addr(filedata):
+    ctx = pdk.new_ctx()
+    program = pdk.parse_program(filedata, arch=arch)
 
-unset = { 'pdk13':0x1fff, 'pdk14':0x3fff }[arch]
-set_hi = { 'pdk13':0x1700, 'pdk14':0x2f00 }[arch]
+    for i in range(TRY_CYCLES_MAX):
+        op = pdk.get_opcode(ctx, program)
+        pdk.step(program, ctx)
+        if op == 'LDSPTL':
+            return (pdk.read_stack_top_word(ctx), pdk.read_a(ctx))
+    else:
+        raise Exception("no LDSPTL near the start of execution")
 
-with open(filename) as f:
-    program = pdk.parse_program(f.read(), arch=arch)
+def read_word(m, byteaddr, default=0xffff):
+    if byteaddr & 1:
+        raise ValueError("alignment error")
 
-ctx = pdk.new_ctx()
+    if byteaddr in m:
+        lo = m[byteaddr]
+    else:
+        lo = default & 0xff
 
-addr = None
-read_address = None
+    if byteaddr+1 in m:
+        hi = m[byteaddr+1]<<8
+    else:
+        hi = default & 0xff00
 
-for i in range(TRY_CYCLES_MAX):
-    op = pdk.get_opcode(ctx, program)
-    pdk.step(program, ctx)
-    if op == 'LDSPTL':
-        addr = pdk.read_stack_top_word(ctx)
-        read_address = pdk.read_a(ctx)
-        break
-else:
-    raise Exception("no LDSPTL near the start of execution")
-
-if command == 'get_address':
-    if read_address % 3 != 0:
-        raise Exception("address not a multiple of 3")
-    print(read_address//3)
-    sys.exit()
-
-cur_opcode = program[addr][2]
-next_opcode = program[addr+1][2]
-replacement_opcode = ( set_hi | led_address )
+    return hi|lo
 
 def write_word(m, byteaddr, data):
     m[byteaddr+0] = data&0xff
     m[byteaddr+1] = (data>>8)&0xff
 
-m = {}
 
-if cur_opcode == replacement_opcode:
-    if read_address != led_address:
-        raise Exception("configured & used addresses should match, but they don't")
+if __name__ == '__main__':
 
-    print("Success: nothing to do", file=sys.stderr)
-elif cur_opcode & replacement_opcode == replacement_opcode:
-    write_word(m, addr*2, replacement_opcode)
-else:
-    if next_opcode != unset:
-        raise ValueError("next opcode not unset {:04x}".format(next_opcode))
-    write_word(m, addr*2, cur_opcode&0xff)
-    write_word(m, (addr+1)*2, replacement_opcode)
+    arch = sys.argv[1]
+    filename = sys.argv[2]
+    command = sys.argv[3]
 
-print(intelhex.generate(m), end='')
+    if command not in ('get_address', 'set_address', 'change_address'):
+        raise ValueError("command not in ('get_address', 'set_address', 'change_address')")
 
-sys.exit(0)
+    if command in ('set_address', 'change_address'):
+        index = int(sys.argv[4])
+        if not 0 <= index <= 85:
+             raise ValueError("not 0 <= index <= 85")
+
+    if arch not in ('pdk13', 'pdk14'):
+        raise ValueError("arch not in ('pdk13', 'pdk14')")
+
+    unset = { 'pdk13':0x1fff, 'pdk14':0x3fff }[arch]
+    set_hi = { 'pdk13':0x1700, 'pdk14':0x2f00 }[arch]
+
+    with open(filename) as f:
+        filedata = f.read()
+
+    rom = intelhex.parse(filedata)
+
+    settings_codeptr, led_addr = get_settings_addr(filedata)
+    settings_codeptr *= 2 # hexfile uses byte addressing
+
+    assert read_word(rom, settings_codeptr, default=unset) == ( set_hi | led_addr )
+
+    if command == 'get_address':
+        if led_addr % 3 != 0:
+            raise Exception("address not a multiple of 3")
+        print(led_addr//3)
+        sys.exit()
+
+    if command == 'change_address':
+        m = {}
+    else:
+        rom[settings_codeptr] = 0xff
+        m = rom
+
+    cur_opcode = read_word(rom, settings_codeptr, default=unset)
+    next_opcode = read_word(rom, settings_codeptr+2, default=unset)
+
+    replacement_opcode = ( set_hi | (index * 3) )
+
+    if cur_opcode == replacement_opcode:
+        pass
+    elif cur_opcode & replacement_opcode == replacement_opcode:
+        write_word(m, settings_codeptr, replacement_opcode)
+    else:
+        if next_opcode != unset:
+            raise ValueError("next opcode not unset {:04x}".format(next_opcode))
+        write_word(m, settings_codeptr, cur_opcode&0xff)
+        write_word(m, settings_codeptr+2, replacement_opcode)
+
+    print(intelhex.generate(m), end='')
+
+    sys.exit(0)
+
