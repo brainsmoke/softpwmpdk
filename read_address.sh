@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Usage: ./read_address.sh
+#
 
 . "$( dirname "$0" )"/config.sh
 
